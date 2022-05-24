@@ -2,7 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 from datetime import datetime
+from time import sleep
+import telebot
 
+TOKEN = '5178356349:AAE5mk8NT13nsChnvTMJ9NVSXUCsp8kRnTM'
+
+bot = telebot.TeleBot(TOKEN)
 
 
 
@@ -19,6 +24,7 @@ URLS = ['https://goldapple.ru/117072-3260800012-the-3in1-foundation',
         'https://goldapple.ru/15780600003-hy-ol',
         'https://goldapple.ru/19000004951-the-scalp-exfoliator-and-massager-pretty-pink',
         ]
+
 HEADERS = {
     'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0'
@@ -26,6 +32,7 @@ HEADERS = {
 
 FLAG = 0
 ITEMS = ()
+last_chat_id = ''
 
 
 
@@ -97,12 +104,6 @@ def save_csv(items, path):
         print('Не могу записать файл, возможно он уже открыт')
     print('Job was finished')
               
-  
-             
-       
-
-
-
 
 def parse(ITEMS, CSV):
     st = 1
@@ -119,6 +120,10 @@ def parse(ITEMS, CSV):
         if new_thing[1] != last_price:
             ITEMS += (info),
             st += 1
+            try:
+                bot.send_message(last_chat_id, f"💵 Новый прайс 💵 \n Товар: {new_thing[0]} \n~{last_price}~₽\n{new_thing[1]}₽", parse_mode='MarkdownV2')
+            except:
+                pass
         else:
             print('Цена не изменилась\n')
             st += 1
@@ -162,6 +167,20 @@ def find(name: str|int , type_ = 'Товар', csv_=CSV) -> tuple:
                 finded.append(tuple(line))
         return header, finded
 
-parse(ITEMS, CSV)
+# BOT WRAPPER
+@bot.message_handler(commands=['start'])
+def start_message(message):
+    global last_chat_id
+    bot.send_message(message.chat.id, "Привет, оповещу тебя о смене цены на товары из 🍎")
+    last_chat_id = message.from_user.id
+    while True:    
+        parse(ITEMS, CSV)
+        sleep(60)
+
+bot.infinity_polling()
+
+
+
+# parse(ITEMS,CSV)
 # read_database(CSV)
 # header, finded = find('1980', type_='Цена')
