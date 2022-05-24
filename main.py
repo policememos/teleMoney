@@ -35,21 +35,34 @@ def get_html(url, params=''):
     print(f'{"Site status... OK" if html.status_code==200 else "Connection Error"}')
     return html
 
-def get_content(html):
+def get_content(html) -> tuple:
+    '''
+    parsing soup object and returns dict 
+    {'name': str,
+    'price': int, 
+    'month': str,
+    'day': int, 
+    'year': int, 
+    'current_time': XX:XX}
+    '''
     
     print(f'Parsing elements...')
     soup = BeautifulSoup(html, 'html.parser')
     item = soup.find('div', class_='pdp__form-inner-wrapper')
     price = item.find('div', class_='price-box price-final_price').find('span', class_='price').text.replace(u'\xa0', '').replace('₽', '').strip()
-    name = item.find('a', class_='link-alt pdp-title__brand').text.strip() +','+ item.find('span', class_='pdp-title__name').text.strip()
+    name = item.find('a', class_='link-alt pdp-title__brand').text.strip() +', '+ item.find('span', class_='pdp-title__name').text.strip()
     now = datetime.now()
     current_time = str(now.strftime("%b %d %Y %H:%M")).split()
-    info = ({'name':name, 'price':price, 'month':current_time[0], 'day':current_time[1], 'year':current_time[2], 'current_time':current_time[3]})
-    print(f'Done.\n')
+    info = ({'name':name, 'price':int(price), 'month':current_time[0], 'day':int(current_time[1]), 'year':int(current_time[2]), 'current_time':current_time[3]})
+    print(f'Done.')
     return info
 
 
 def check_csv(path):
+    '''
+    Creating file with heder row 'Товар', 'Цена', 'Месяц',' День','Год','Время' , or skip
+    change FLAG to 1 if create
+    '''
     global FLAG
     try:
         with open(path, 'r') as file:    
@@ -67,7 +80,8 @@ def create_csv(path):
             writer = csv.writer(file, delimiter=';')
             writer.writerow(['Товар', 'Цена', 'Месяц',' День','Год','Время'])
             print('File prices.csv created')
-    return print('File already exists')
+    else:
+        print('File already exists')
 
 
   
@@ -94,9 +108,18 @@ def parse(ITEMS, CSV):
         html = get_html(url)
         info = get_content(html.text)
         new_thing = (info['name'],info['price'])
-        last_price = find(new_thing[0] ,type_='Товар')
-        ITEMS += (info),
-        st += 1
+        try:
+            _, finded_info = find(new_thing[0] ,type_='Товар')
+            last_price = int(finded_info[-1][1])
+        except (FileNotFoundError, IndexError):
+            last_price = None
+        if new_thing[1] != last_price:
+            ITEMS += (info),
+            st += 1
+        else:
+            print('Цена не изменилась\n')
+            st += 1
+            pass
 
     save_csv(ITEMS, CSV)
 
@@ -109,6 +132,14 @@ def read_database(path):
             print(f'{nam=}, {pr=}, {mo=}, {day=}, {year=}, {time=} ')
             
 def find(name: str|int , type_ = 'Товар', csv_=CSV) -> tuple:
+    '''
+    name: name of search, 
+    type_= 'Товар'|'Цена'|'Месяц'|'День'|'Год'|'Время',
+    csv_= filename
+    
+    returns header = ['Товар', 'Цена', 'Месяц',' День','Год','Время']
+    returns finded = tuple((search obj),(search obj))
+    '''
     with open(csv_, 'r') as file:
         reader = list(csv.reader(file, delimiter=';'))
         header = reader.pop(0)
@@ -128,6 +159,6 @@ def find(name: str|int , type_ = 'Товар', csv_=CSV) -> tuple:
                 finded.append(tuple(line))
         return header, finded
 
-# parse(ITEMS, CSV)
+parse(ITEMS, CSV)
 # read_database(CSV)
 # header, finded = find('1980', type_='Цена')
