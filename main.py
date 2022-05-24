@@ -81,18 +81,21 @@ def create_csv(path):
             writer.writerow(['Товар', 'Цена', 'Месяц',' День','Год','Время'])
             print('File prices.csv created')
     else:
-        print('File already exists')
+        pass
 
 
   
 def save_csv(items, path):
     check_csv(path)
     create_csv(path)
-    with open(path, 'a', newline='') as file:
-        writer = csv.writer(file, delimiter=';')
-        for item in items:
-            writer.writerow([item['name'], item['price'], item['month'], item['day'], item['year'], item['current_time']])
-    print('Finish, file name: prices.csv')
+    try:
+        with open(path, 'a', newline='') as file:
+            writer = csv.writer(file, delimiter=';')
+            for item in items:
+                writer.writerow([item['name'], item['price'], item['month'], item['day'], item['year'], item['current_time']])
+    except PermissionError:
+        print('Не могу записать файл, возможно он уже открыт')
+    print('Job was finished')
               
   
              
