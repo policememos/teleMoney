@@ -4,7 +4,7 @@ import csv
 from datetime import datetime
 from time import sleep
 import telebot
-import bot.sql_api as db
+import sql_api as db
 
 TOKEN = '5178356349:AAE5mk8NT13nsChnvTMJ9NVSXUCsp8kRnTM'
 
