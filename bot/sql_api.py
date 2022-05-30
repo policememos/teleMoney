@@ -14,7 +14,7 @@ def create_db():
                     "Month"	TEXT,
                     "Day"	NUMERIC,
                     "Year"	INTEGER,
-                    "Time"	TEXT
+                    "Time"	TEXTpip list
                 )''')
 
 
