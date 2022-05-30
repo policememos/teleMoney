@@ -250,7 +250,7 @@ def find(name: str | int, type_='Articule', csv_=CSV) -> tuple:
 def start_message(message):
     global last_chat_id
     bot.send_message(
-        message.chat.id, "Привет, оповещу тебя о смене цены на товары из 🍎")
+        message.chat.id, "Привет, оповещу тебя о смене цены на товары из 🍎\nСписок товаров: mylist")
     last_chat_id = message.from_user.id
     while True:
         parse(ITEMS, CSV)
