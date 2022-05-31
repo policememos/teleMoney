@@ -23,8 +23,8 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0'
 }
 
-FLAG = 0
-ITEMS = ()
+
+
 last_chat_id = ''
 connection_time = ''
 diff_in_milliseconds = ''
@@ -54,7 +54,7 @@ def get_html(url, params=''):
 def get_content(html) -> tuple:
     '''
     parsing soup object and returns dict 
-    {'articule':    str,
+    {'articule':    int,
     'name':         str,
     'price':        int, 
     'special_price':int,
@@ -77,7 +77,7 @@ def get_content(html) -> tuple:
     name = item.find('a', class_='link-alt pdp-title__brand').text.strip() + ', ' + item.find('span', class_='pdp-title__name').text.strip()
     now2 = datetime.now()
     current_time2 = str(now2.strftime("%b %d %Y %H:%M")).split()
-    info = ({'articule': articule, 'name': name, 'price': int(price), 'special_price': int(special_price),'month': current_time2[0], 'day': int(current_time2[1]), 'year': int(current_time2[2]), 'current_time': current_time2[3]})
+    info = ({'articule': int(articule), 'name': name, 'price': int(price), 'special_price': int(special_price),'month': current_time2[0], 'day': int(current_time2[1]), 'year': int(current_time2[2]), 'current_time': current_time2[3]})
     now3 = datetime.now()
     current_time3 = str(now3.strftime("%b %d %Y %H:%M:%S"))
     connection_time = now3 - now1
@@ -86,56 +86,17 @@ def get_content(html) -> tuple:
     print(f'                     Parsing time {round(diff_in_milliseconds)}ms')
     return info
 
-
-# def check_csv(path):
-    '''
-    Creating file with heder row 'Articule', 'Good', 'Price', 'Special_price', 'Month',' Day','Year','Time' , or skip
-    change FLAG to 1 if create
-    '''
-    global FLAG
-    try:
-        with open(path, 'r') as file:
-            reader = tuple(csv.reader(file, delimiter=';'))
-            text = ['Articule', 'Good', 'Price',
-                    'Special_price', 'Month', ' Day', 'Year', 'Time']
-            if reader[0] == text:
-                FLAG = 1
-
-    except:
-        pass
-
-
-# def create_csv(path):
-    if not FLAG:
-        with open(path, 'w', newline='') as file:
-            writer = csv.writer(file, delimiter=';')
-            writer.writerow(['Articule', 'Good', 'Price',
-                            'Special_price', 'Month', ' Day', 'Year', 'Time'])
-            print('File prices.csv created')
-    else:
-        pass
-
-
-# def save_csv(items, path):
-    check_csv(path)
-    create_csv(path)
-    try:
-        with open(path, 'a', newline='') as file:
-            writer = csv.writer(file, delimiter=';')
-            for item in items:
-                writer.writerow([item['articule'], item['name'], item['price'], item['special_price'],
-                                item['month'], item['day'], item['year'], item['current_time']])
-    except PermissionError:
-        print('Can\'t write file, perhaps it\'s opened?')
-    print(f'Job was finished\n' if not updated_price else f'-> Updated: {updated_price} goods price')
     
-def save_info_db(items):
-    for item in items:
-        db.insert_data(item)
+def save_info_db(item):
+    result = db.insert_data(item)
+    match result:
+        case None:
+            print('write to db error')
+        case True:
+            print(f'Job was finished\n' if not updated_price else f'-> Updated: {updated_price} goods price')
 
 
 def alert_to_user(oldprice, newprice, item):
-    print(f'ALERT {oldprice=}, {newprice=}, {item}')
     if newprice < oldprice:
         try:
             print(f'ALERT try')
@@ -145,7 +106,8 @@ def alert_to_user(oldprice, newprice, item):
             pass
 
 
-def parse(ITEMS, CSV):
+def parse():
+    items = ()
     goods_amount = len(URLS)
     goods_amount_counter = 1
     global updated_price
@@ -161,53 +123,49 @@ def parse(ITEMS, CSV):
                 continue  # ! добавь месседж юзеру что товар непрочекан
             # ({'articule':articule,'name':name, 'price':int(price),'special_price':int(special_price), 'month':current_time[0], 'day':int(current_time[1]), 'year':int(current_time[2]), 'current_time':current_time[3]})
             info = get_content(html.text)
-            new_thing = (info['articule'], info['name'],
-                         info['price'], info['special_price'])
+            new_thing = (info['articule'], info['name'], info['price'], info['special_price'])
 
             try:
                 # find('name', type_='?') -> returns header = ['Articule', 'Good', 'Price', 'Special_price', 'Month',' Day','Year','Time']
-                _, finded_info = find(new_thing[0], type_='Articule')
-                #                             returns finded = tuple((search obj),(search obj))
-                last_price, last_spesial_price = int(
-                    finded_info[-1][2]), int(finded_info[-1][3])
-            except (FileNotFoundError, IndexError):
-                last_price, last_spesial_price = 9999999, 9999999
+                finded_info = db.find_data(new_thing[0])
+                last_item = finded_info[-1]
+            except Exception as err:
+                print(err)
 
             best_price, best_sp_pr = new_thing[2], new_thing[3]
-            try:
-                new_thebest = best_price if best_price < best_sp_pr else best_sp_pr
-                old_thebest = last_price if last_price < last_spesial_price else last_spesial_price
+            # try:
+            #     new_thebest = best_price if best_price < best_sp_pr else best_sp_pr
+            #     old_thebest = last_price if last_price < last_spesial_price else last_spesial_price
 
-            except:
-                pass
-            match new_thing:
-                case [art, nam, pr, sp_pr] if pr != last_price:
-                    ITEMS += (info),
-                    goods_amount_counter += 1
-                    updated_price += 1
-                    print(
-                        f'💵 Price Новый прайс 💵 \nТовар: *{nam}* \n~{last_price}~ ₽,{last_spesial_price}    {pr=}, {sp_pr=} ₽\n\n')
-                    if old_thebest:
-                        alert_to_user(old_thebest, new_thebest, new_thing)
+            # except:
+            #     pass
+            # match new_thing:
+            #     case [art, nam, pr, sp_pr] if pr != last_price:
+            #         items += (info),
+            #         goods_amount_counter += 1
+            #         updated_price += 1
+            #         print(
+            #             f'💵 Price Новый прайс 💵 \nТовар: *{nam}* \n~{last_price}~ ₽,{last_spesial_price}    {pr=}, {sp_pr=} ₽\n\n')
+            #         if old_thebest:
+            #             alert_to_user(old_thebest, new_thebest, new_thing)
 
-                case [art, nam, pr, sp_pr] if sp_pr != last_spesial_price:
-                    ITEMS += (info),
-                    goods_amount_counter += 1
-                    updated_price += 1
-                    print(
-                        f'💵 Special_price Новый прайс 💵 \nТовар: *{nam}* \n~{last_price}~ ₽,{last_spesial_price}~ ₽    {sp_pr=}, {sp_pr=} ₽\n\n')
-                    if old_thebest:
-                        alert_to_user(old_thebest, new_thebest, new_thing)
-                    else:
-                        print(f'alert_to_user not called! {old_thebest=} ')
+            #     case [art, nam, pr, sp_pr] if sp_pr != last_spesial_price:
+            #         items += (info),
+            #         goods_amount_counter += 1
+            #         updated_price += 1
+            #         print(
+            #             f'💵 Special_price Новый прайс 💵 \nТовар: *{nam}* \n~{last_price}~ ₽,{last_spesial_price}~ ₽    {sp_pr=}, {sp_pr=} ₽\n\n')
+            #         if old_thebest:
+            #             alert_to_user(old_thebest, new_thebest, new_thing)
+            #         else:
+            #             print(f'alert_to_user not called! {old_thebest=} ')
 
-                case _:
-                    print('Same price\n')
-                    goods_amount_counter += 1
-                    pass
-    test = info.values()
-    save_info_db(info.values())
-    # save_csv(ITEMS, CSV)
+            #     case _:
+            #         print('Same price\n')
+            #         goods_amount_counter += 1
+            #         pass
+            save_info_db(tuple(info.values())) #write info to DB
+
 
 
 def read_database(path):
@@ -259,11 +217,11 @@ def start_message(message):
     last_chat_id = message.from_user.id
     db.create_db()
     while True:
-        parse(ITEMS, CSV)
+        parse()
         sleep(30)
     
 
-@bot.message_handler(regexp=['MyList', 'Mylist', 'mylist'])
+@bot.message_handler(regexp='Mylist')
 def mylist(message):
     items = read_database(CSV)
     for art, good, pr, sp_pr, mo, day, year, time in items:
