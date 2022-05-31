@@ -87,7 +87,7 @@ def get_content(html) -> tuple:
     return info
 
 
-def check_csv(path):
+# def check_csv(path):
     '''
     Creating file with heder row 'Articule', 'Good', 'Price', 'Special_price', 'Month',' Day','Year','Time' , or skip
     change FLAG to 1 if create
@@ -105,7 +105,7 @@ def check_csv(path):
         pass
 
 
-def create_csv(path):
+# def create_csv(path):
     if not FLAG:
         with open(path, 'w', newline='') as file:
             writer = csv.writer(file, delimiter=';')
@@ -116,7 +116,7 @@ def create_csv(path):
         pass
 
 
-def save_csv(items, path):
+# def save_csv(items, path):
     check_csv(path)
     create_csv(path)
     try:
@@ -128,6 +128,10 @@ def save_csv(items, path):
     except PermissionError:
         print('Can\'t write file, perhaps it\'s opened?')
     print(f'Job was finished\n' if not updated_price else f'-> Updated: {updated_price} goods price')
+    
+def save_info_db(items):
+    for item in items:
+        db.insert_data(item)
 
 
 def alert_to_user(oldprice, newprice, item):
@@ -201,8 +205,9 @@ def parse(ITEMS, CSV):
                     print('Same price\n')
                     goods_amount_counter += 1
                     pass
-
-    save_csv(ITEMS, CSV)
+    test = info.values()
+    save_info_db(info.values())
+    # save_csv(ITEMS, CSV)
 
 
 def read_database(path):
@@ -252,14 +257,22 @@ def start_message(message):
     bot.send_message(
         message.chat.id, "Привет, оповещу тебя о смене цены на товары из 🍎\nСписок товаров: mylist")
     last_chat_id = message.from_user.id
+    db.create_db()
     while True:
         parse(ITEMS, CSV)
         sleep(30)
     
 
-@bot.message_handler(regexp='MyList')
-def command_help(message):
+@bot.message_handler(regexp=['MyList', 'Mylist', 'mylist'])
+def mylist(message):
     items = read_database(CSV)
+    for art, good, pr, sp_pr, mo, day, year, time in items:
+        bot.send_message(message.chat.id, f'Артикул: {art}\nНаименование: {good}\nЦена: {pr}\nСпец\.цена: {sp_pr}\nДата добавления: {year} {mo} {day} {time}')
+    
+
+@bot.message_handler(commands=['mylist_db'])
+def mylist_db(message):
+    items = db.read_db()
     for art, good, pr, sp_pr, mo, day, year, time in items:
         bot.send_message(message.chat.id, f'Артикул: {art}\nНаименование: {good}\nЦена: {pr}\nСпец\.цена: {sp_pr}\nДата добавления: {year} {mo} {day} {time}')
     

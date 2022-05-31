@@ -7,7 +7,7 @@ def create_db():
         with sqlite3.connect(_DBNAME) as db:
             cursor = db.cursor()
             cursor.execute('''
-                        REATE TABLE IF NOT EXISTS "Prices_db" (
+                        CREATE TABLE IF NOT EXISTS "Prices_db" (
                         "Articule"	INTEGER,
                         "Good"	TEXT,
                         "Price"	INTEGER,
@@ -52,4 +52,3 @@ def find_data(name: str | int, type_='Articule') -> tuple:
         print(f'Error occured:{err.__class__}, {err}')
         return None        
     
-create_db()
