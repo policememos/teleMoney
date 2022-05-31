@@ -1,2 +1,5 @@
-/.Telem
-/prices.csv
+/.*/
+/.telemoney
+*.csv
+*.db
+__pycache__/
