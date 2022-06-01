@@ -149,7 +149,7 @@ def parse():
                     # items += (info),
                     goods_amount_counter += 1
                     updated_price += 1
-                    print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
+                    print(f'\n💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
                     save_info_db(tuple(info.values())) 
                     alert_to_user(old_thebest, new_thebest, new_thing)
                 elif new_thebest > old_thebest:
@@ -179,7 +179,7 @@ def parse():
 def start_message(message):
     global last_chat_id
     bot.send_message(
-        message.chat.id, "Привет, оповещу тебя о смене цены на товары из 🍎\nСписок товаров: mylist")
+        message.chat.id, "🤖: Привет, оповещу тебя о\nсмене цены на товары из 🍎\nᅠᅠЦены обновляю каждые 3 часа")
     last_chat_id = message.from_user.id
     db.create_db()
     while True:
