@@ -15,7 +15,7 @@ bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 Uzver = ''
 CSV = 'prices.csv'
 URLS = [#'https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
-        'https://goldapple.ru/11663-35161700002-menthol',
+        #'https://goldapple.ru/11663-35161700002-menthol',
         'https://goldapple.ru/65970100004-hydrating-cream'
         ]
 
@@ -58,7 +58,7 @@ def get_content(html) -> tuple:
     {'articule':    int,
     'name':         str,
     'price':        int, 
-    'special_price':int,
+    'special_price':str,
     'month':        str,
     'day':          int, 
     'year':         int, 
@@ -68,20 +68,30 @@ def get_content(html) -> tuple:
     now1 = datetime.now()
     current_time1 = str(now1.strftime("%b %d %Y %H:%M:%S"))
     print(f'{current_time1} Parsing elements...')
-    soup = BeautifulSoup(html, 'html.parser')
-    item = soup.find('div', class_='pdp__form-inner-wrapper')
-    articule = item.find('p', class_="paragraph-2 pdp-form__sku").find('span', attrs={'itemprop': 'sku'}).text
-    item_price = soup.find('div', class_='price-box price-final_price')
-
+    soup = BeautifulSoup(html, 'lxml')
+    
+    # item = soup.find('div', class_='pdp__form-inner-wrapper')
+    # articule = item.find('p', class_="paragraph-2 pdp-form__sku").find('span', attrs={'itemprop': 'sku'}).text
+    # item_price = soup.find('div', class_='price-box price-final_price')
     # special_price = item_price.find('span', class_="best-loyalty-price").find('span', attrs={'data-price-type': 'bestLoyaltyPrice'}).text.replace(u'\xa0', '').replace('₽', '').strip()
+    # price = item_price.find('span', class_='price').text.replace(u'\xa0', '').replace('₽', '').strip()
+    # name = item.find('a', class_='link-alt pdp-title__brand').text.strip() + ', ' + item.find('span', class_='pdp-title__name').text.strip()
+    
     dom = etree.HTML(str(soup))
-    special_price = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/div[3]/div/div/span[2]/span/span/span')[0].text.replace(u'\xa0', '').replace('₽', '').strip()
-
-    price = item_price.find('span', class_='price').text.replace(u'\xa0', '').replace('₽', '').strip()
-    name = item.find('a', class_='link-alt pdp-title__brand').text.strip() + ', ' + item.find('span', class_='pdp-title__name').text.strip()
+    articule = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/p[1]/span[2]')[0].text
+    price = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/div[3]/div/div/span[1]/span/span/span')[0].text.replace(u'\xa0', '').replace('₽', '').strip()
+    name = ', '.join((dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/header/h1/a')[0].text.strip(), dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/header/h1/span')[0].text.strip()))
+    try:
+        special_price = int(dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/div[3]/div/span/span/span/span')[0].text.replace(u'\xa0', '').replace('₽', '').strip())
+        if special_price == 0:
+            special_price = None
+    except:
+        special_price = None
+    
+    
     now2 = datetime.now()
     current_time2 = str(now2.strftime("%b %d %Y %H:%M")).split()
-    info = ({'articule': int(articule), 'name': name, 'price': int(price), 'special_price': int(special_price),'month': current_time2[0], 'day': int(current_time2[1]), 'year': int(current_time2[2]), 'current_time': current_time2[3]})
+    info = ({'articule': int(articule), 'name': name, 'price': int(price), 'special_price': special_price, 'month': current_time2[0], 'day': int(current_time2[1]), 'year': int(current_time2[2]), 'current_time': current_time2[3]})
     now3 = datetime.now()
     current_time3 = str(now3.strftime("%b %d %Y %H:%M:%S"))
     connection_time = now3 - now1
@@ -95,9 +105,9 @@ def save_info_db(item):
     result = db.insert_data(item)
     match result:
         case None:
-            print('write to db error')
+            print('write to db error\n\n')
         case True:
-            print(f'Job was finished\n' if not updated_price else f'-> Updated: {updated_price} goods price')
+            print(f'new info was added in db\n\n')
 
 
 def alert_to_user(oldprice, newprice, item):
@@ -134,61 +144,28 @@ def parse():
                 last_price, last_spesial_price = finded_last_info[2], finded_last_info[3]
                 new_thebest = best_price if best_price < best_sp_pr else best_sp_pr
                 old_thebest = last_price if last_price < last_spesial_price else last_spesial_price
+                if new_thebest < old_thebest:
+                    items += (info),
+                    goods_amount_counter += 1
+                    updated_price += 1
+                    print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
+                    alert_to_user(old_thebest, new_thebest, new_thing)
+                else:
+                    print('Same price')
+                    goods_amount_counter += 1
+                    pass
             except:
                 print('Try to find old price FAILED, skip this step')
-                pass
-            if new_thebest < old_thebest:
-                items += (info),
-                goods_amount_counter += 1
-                updated_price += 1
-                print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
-                alert_to_user(old_thebest, new_thebest, new_thing)
-            else:
-                print('Same price\n')
                 goods_amount_counter += 1
                 pass
             save_info_db(tuple(info.values())) #write info to DB
 
 
 
-def read_database(path):
-    with open(path, 'r') as file:
-        reader = list(csv.reader(file, delimiter=';'))
-        reader.pop(0)
-        print(f'>>>Reading database')
-        for art, good, pr, sp_pr, mo, day, year, time in reader:
-            yield art, good, pr, sp_pr, mo, day, year, time
 
 
-def find(name: str | int, type_='Articule', csv_=CSV) -> tuple:
-    '''
-    name: name of search, 
-    type_= 'Articule'|'Good'|'Price'|'Special_price'|'Month'|'Day'|'Year'|'Time',
-    csv_= filename
 
-    returns header = ['Articule', 'Good', 'Price', 'Special_price', 'Month',' Day','Year','Time']
-    returns finded = tuple((search obj),(search obj))
-    '''
-    with open(csv_, 'r') as file:
-        reader = list(csv.reader(file, delimiter=';'))
-        header = reader.pop(0)
-        finded = []
-        _type = ''
 
-        match type_:
-            case 'Articule': _type = 0
-            case 'Good': _type = 1
-            case 'Price': _type = 2
-            case 'Special_price': _type = 3
-            case 'Month': _type = 4
-            case' Day': _type = 5
-            case'Year': _type = 6
-            case'Time': _type = 7
-
-        for line in reader:
-            if line[_type] == name:
-                finded.append(tuple(line))
-        return header, finded
 
     
 # BOT WRAPPER
@@ -226,3 +203,4 @@ if __name__ == '__main__':
 # parse(ITEMS,CSV)
 # read_database(CSV)
 # header, finded = find('1980', type_='Price')
+#/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form
