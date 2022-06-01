@@ -1,8 +1,9 @@
 import sqlite3
 
-_DBNAME = 'pricedb.db'
+_DBNAME = 'prices.db'
 
-def create_db():
+def create_db(chatid):
+    _DBNAME = f'{chatid}.db'
     try:
         with sqlite3.connect(_DBNAME) as db:
             cursor = db.cursor()
@@ -22,7 +23,8 @@ def create_db():
         return None
 
 
-def read_db():
+def read_db(chatid):
+    _DBNAME = f'{chatid}.db'
     try:
         with sqlite3.connect(_DBNAME) as db:
             cursor = db.cursor()
@@ -33,7 +35,8 @@ def read_db():
         return None        
 
 
-def insert_data(item):
+def insert_data(item,chatid):
+    _DBNAME = f'{chatid}.db'
     try:
         sp_pr = 'null' if item[3] is None else item[3]
         with sqlite3.connect(_DBNAME) as db:
@@ -45,7 +48,8 @@ def insert_data(item):
         return None        
      
         
-def find_data(name: int, type_='Articule') -> tuple:
+def find_data(name: int, chatid, type_='Articule') -> tuple:
+    _DBNAME = f'{chatid}.db'
     try:
         with sqlite3.connect(_DBNAME) as db:
             cursor = db.cursor()

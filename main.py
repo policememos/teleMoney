@@ -14,8 +14,8 @@ bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 
 Uzver = ''
 CSV = 'prices.csv'
-URLS = [#'https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
-        #'https://goldapple.ru/11663-35161700002-menthol',
+URLS = ['https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
+        'https://goldapple.ru/11663-35161700002-menthol',
         'https://goldapple.ru/65970100004-hydrating-cream'
         ]
 
@@ -101,8 +101,8 @@ def get_content(html) -> tuple:
     return info
 
     
-def save_info_db(item):
-    result = db.insert_data(item)
+def save_info_db(item,chatid):
+    result = db.insert_data(item, chatid)
     match result:
         case None:
             print('write to db error\n\n')
@@ -150,21 +150,21 @@ def parse():
                     goods_amount_counter += 1
                     updated_price += 1
                     print(f'\n💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
-                    save_info_db(tuple(info.values())) 
+                    save_info_db(tuple(info.values()), last_chat_id) 
                     alert_to_user(old_thebest, new_thebest, new_thing)
                 elif new_thebest > old_thebest:
                     # items += (info),
                     goods_amount_counter += 1
                     updated_price += 1
                     print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
-                    save_info_db(tuple(info.values())) 
+                    save_info_db(tuple(info.values()), last_chat_id) 
                 else:    
                     print('Same price')
                     goods_amount_counter += 1
             except:
                 print('Try to find old price FAILED, skip this step')
                 goods_amount_counter += 1
-                save_info_db(tuple(info.values())) #write info to DB
+                save_info_db(tuple(info.values()), last_chat_id) #write info to DB
 
 
 
@@ -179,12 +179,12 @@ def parse():
 def start_message(message):
     global last_chat_id
     bot.send_message(
-        message.chat.id, "🤖: Привет, оповещу тебя о\nсмене цены на товары из 🍎\nᅠᅠЦены обновляю каждые 3 часа")
+        message.chat.id, "🤖: Привет, оповещу тебя о\nсмене цены на товары из 🍎\nЦены обновляю каждые 3 часа")
     last_chat_id = message.from_user.id
-    db.create_db()
+    db.create_db(last_chat_id)
     while True:
         parse()
-        sleep(5)
+        sleep(30)
     
     
 
