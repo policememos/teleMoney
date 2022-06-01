@@ -142,8 +142,9 @@ def parse():
                 finded_last_info = db.find_data(new_thing[0])[-1]
                 best_price, best_sp_pr = new_thing[2], new_thing[3]
                 last_price, last_spesial_price = finded_last_info[2], finded_last_info[3]
-                new_thebest = best_price if best_price < best_sp_pr else best_sp_pr
-                old_thebest = last_price if last_price < last_spesial_price else last_spesial_price
+                new_thebest = best_price if best_sp_pr is None or best_price < best_sp_pr else best_sp_pr
+                old_thebest = last_price if last_spesial_price is None or last_price < last_spesial_price else last_spesial_price
+                      
                 if new_thebest < old_thebest:
                     items += (info),
                     goods_amount_counter += 1
