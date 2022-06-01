@@ -102,8 +102,8 @@ def get_content(html) -> tuple:
     return info
 
     
-def save_info_db(item,chatid):
-    result = db.insert_data(item, chatid)
+def save_info_db(item):
+    result = db.insert_data(item)
     match result:
         case None:
             print('write to db error\n\n')
@@ -151,21 +151,21 @@ def parse():
                     goods_amount_counter += 1
                     updated_price += 1
                     print(f'\n💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
-                    save_info_db(tuple(info.values()), last_chat_id) 
+                    save_info_db(tuple(info.values())) 
                     alert_to_user(old_thebest, new_thebest, new_thing)
                 elif new_thebest > old_thebest:
                     # items += (info),
                     goods_amount_counter += 1
                     updated_price += 1
                     print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
-                    save_info_db(tuple(info.values()), last_chat_id) 
+                    save_info_db(tuple(info.values())) 
                 else:    
                     print('Same price')
                     goods_amount_counter += 1
             except:
                 print('Try to find old price FAILED, skip this step')
                 goods_amount_counter += 1
-                save_info_db(tuple(info.values()), last_chat_id) #write info to DB
+                save_info_db(tuple(info.values())) #write info to DB
 
 
 
@@ -182,12 +182,14 @@ def start_message(message):
     bot.send_message(
         message.chat.id, "🤖: Привет, оповещу тебя о\nсмене цены на товары из 🍎\nЦены обновляю каждые 3 часа")
     last_chat_id = message.from_user.id
-    db.create_db(last_chat_id)
-    parse()
+    db.create_db()
+    while True:
+        parse()
+        sleep(30)
     
     
 
-@bot.message_handler(commands=['mylist_db'])
+@bot.message_handler(commands=['mylist'])
 def mylist_db(message):
     items = db.read_db()
     for art, good, pr, sp_pr, mo, day, year, time in items:
