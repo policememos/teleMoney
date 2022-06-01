@@ -5,6 +5,7 @@ from datetime import datetime
 from time import sleep
 import telebot
 import sql_api as db
+from lxml import etree
 
 TOKEN = '5178356349:AAE5mk8NT13nsChnvTMJ9NVSXUCsp8kRnTM'
 
@@ -13,8 +14,8 @@ bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 
 Uzver = ''
 CSV = 'prices.csv'
-URLS = ['https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
-        'https://goldapple.ru/11663-35161700002-menthol',
+URLS = [#'https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
+        # 'https://goldapple.ru/11663-35161700002-menthol',
         "https://goldapple.ru/65970100004-hydrating-cream"
         ]
 
@@ -70,9 +71,12 @@ def get_content(html) -> tuple:
     soup = BeautifulSoup(html, 'html.parser')
     item = soup.find('div', class_='pdp__form-inner-wrapper')
     articule = item.find('p', class_="paragraph-2 pdp-form__sku").find('span', attrs={'itemprop': 'sku'}).text
-    paran = ["old-price", "best-loyalty-price"]
     item_price = soup.find('div', class_='price-box price-final_price')
-    special_price = item_price.find('span', class_=paran[1]).find('span', attrs={'data-price-type': 'bestLoyaltyPrice'}).text.replace(u'\xa0', '').replace('₽', '').strip()
+    # special_price = item_price.find('span', class_="best-loyalty-price").find('span', attrs={'data-price-type': 'bestLoyaltyPrice'}).text.replace(u'\xa0', '').replace('₽', '').strip()
+    
+    dom = etree.HTML(str(soup))
+    special_price = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/div[3]/div/div/span[2]/span/span/span')[0].text.replace(u'\xa0', '').replace('₽', '').strip()
+    print(special_price)
     price = item_price.find('span', class_='price').text.replace(u'\xa0', '').replace('₽', '').strip()
     name = item.find('a', class_='link-alt pdp-title__brand').text.strip() + ', ' + item.find('span', class_='pdp-title__name').text.strip()
     now2 = datetime.now()
@@ -97,13 +101,12 @@ def save_info_db(item):
 
 
 def alert_to_user(oldprice, newprice, item):
-    if newprice < oldprice:
-        try:
-            print(f'ALERT try')
-            bot.send_message(last_chat_id, f"💵 Новый прайс 💵 \nТовар: *{item[1]}* \n~{oldprice}~ ₽    {newprice} ₽")
-        except:
-            print(f'ALERT fall')
-            pass
+    try:
+        print(f'Alert to user sended')
+        bot.send_message(last_chat_id, f"💵 Новый прайс 💵 \nТовар: *{item[1]}* \n~{oldprice}~ ₽    {newprice} ₽")
+    except:
+        print(f'Alert to user filed')
+        pass
 
 
 def parse():
@@ -124,46 +127,26 @@ def parse():
             # ({'articule':articule,'name':name, 'price':int(price),'special_price':int(special_price), 'month':current_time[0], 'day':int(current_time[1]), 'year':int(current_time[2]), 'current_time':current_time[3]})
             info = get_content(html.text)
             new_thing = (info['articule'], info['name'], info['price'], info['special_price'])
-
             try:
                 # find('name', type_='?') -> returns header = ['Articule', 'Good', 'Price', 'Special_price', 'Month',' Day','Year','Time']
-                finded_info = db.find_data(new_thing[0])
-                last_item = finded_info[-1]
-            except Exception as err:
-                print(err)
-
-            best_price, best_sp_pr = new_thing[2], new_thing[3]
-            # try:
-            #     new_thebest = best_price if best_price < best_sp_pr else best_sp_pr
-            #     old_thebest = last_price if last_price < last_spesial_price else last_spesial_price
-
-            # except:
-            #     pass
-            # match new_thing:
-            #     case [art, nam, pr, sp_pr] if pr != last_price:
-            #         items += (info),
-            #         goods_amount_counter += 1
-            #         updated_price += 1
-            #         print(
-            #             f'💵 Price Новый прайс 💵 \nТовар: *{nam}* \n~{last_price}~ ₽,{last_spesial_price}    {pr=}, {sp_pr=} ₽\n\n')
-            #         if old_thebest:
-            #             alert_to_user(old_thebest, new_thebest, new_thing)
-
-            #     case [art, nam, pr, sp_pr] if sp_pr != last_spesial_price:
-            #         items += (info),
-            #         goods_amount_counter += 1
-            #         updated_price += 1
-            #         print(
-            #             f'💵 Special_price Новый прайс 💵 \nТовар: *{nam}* \n~{last_price}~ ₽,{last_spesial_price}~ ₽    {sp_pr=}, {sp_pr=} ₽\n\n')
-            #         if old_thebest:
-            #             alert_to_user(old_thebest, new_thebest, new_thing)
-            #         else:
-            #             print(f'alert_to_user not called! {old_thebest=} ')
-
-            #     case _:
-            #         print('Same price\n')
-            #         goods_amount_counter += 1
-            #         pass
+                finded_last_info = db.find_data(new_thing[0])[-1]
+                best_price, best_sp_pr = new_thing[2], new_thing[3]
+                last_price, last_spesial_price = finded_last_info[2], finded_last_info[3]
+                new_thebest = best_price if best_price < best_sp_pr else best_sp_pr
+                old_thebest = last_price if last_price < last_spesial_price else last_spesial_price
+            except:
+                print('Try to find old price FAILED, skip this step')
+                pass
+            if new_thebest < old_thebest:
+                items += (info),
+                goods_amount_counter += 1
+                updated_price += 1
+                print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
+                alert_to_user(old_thebest, new_thebest, new_thing)
+            else:
+                print('Same price\n')
+                goods_amount_counter += 1
+                pass
             save_info_db(tuple(info.values())) #write info to DB
 
 
