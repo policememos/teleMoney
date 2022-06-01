@@ -15,8 +15,8 @@ bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 Uzver = ''
 CSV = 'prices.csv'
 URLS = [#'https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
-        # 'https://goldapple.ru/11663-35161700002-menthol',
-        "https://goldapple.ru/65970100004-hydrating-cream"
+        'https://goldapple.ru/11663-35161700002-menthol',
+        'https://goldapple.ru/65970100004-hydrating-cream'
         ]
 
 HEADERS = {
@@ -72,11 +72,11 @@ def get_content(html) -> tuple:
     item = soup.find('div', class_='pdp__form-inner-wrapper')
     articule = item.find('p', class_="paragraph-2 pdp-form__sku").find('span', attrs={'itemprop': 'sku'}).text
     item_price = soup.find('div', class_='price-box price-final_price')
+
     # special_price = item_price.find('span', class_="best-loyalty-price").find('span', attrs={'data-price-type': 'bestLoyaltyPrice'}).text.replace(u'\xa0', '').replace('₽', '').strip()
-    
     dom = etree.HTML(str(soup))
     special_price = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/div[3]/div/div/span[2]/span/span/span')[0].text.replace(u'\xa0', '').replace('₽', '').strip()
-    print(special_price)
+
     price = item_price.find('span', class_='price').text.replace(u'\xa0', '').replace('₽', '').strip()
     name = item.find('a', class_='link-alt pdp-title__brand').text.strip() + ', ' + item.find('span', class_='pdp-title__name').text.strip()
     now2 = datetime.now()
