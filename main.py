@@ -120,7 +120,7 @@ def alert_to_user(oldprice, newprice, item):
 
 
 def parse():
-    items = ()
+    # items = ()
     goods_amount = len(URLS)
     goods_amount_counter = 1
     global updated_price
@@ -146,20 +146,25 @@ def parse():
                 old_thebest = last_price if last_spesial_price is None or last_price < last_spesial_price else last_spesial_price
                       
                 if new_thebest < old_thebest:
-                    items += (info),
+                    # items += (info),
                     goods_amount_counter += 1
                     updated_price += 1
                     print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
+                    save_info_db(tuple(info.values())) 
                     alert_to_user(old_thebest, new_thebest, new_thing)
-                else:
+                elif new_thebest > old_thebest:
+                    # items += (info),
+                    goods_amount_counter += 1
+                    updated_price += 1
+                    print(f'💵 Новый прайс 💵 \nТовар: *{new_thing[1]}* \n~{last_price}~ ₽,{last_spesial_price}    {best_price=}, {best_sp_pr=} ₽\n\n')
+                    save_info_db(tuple(info.values())) 
+                else:    
                     print('Same price')
                     goods_amount_counter += 1
-                    pass
             except:
                 print('Try to find old price FAILED, skip this step')
                 goods_amount_counter += 1
-                pass
-            save_info_db(tuple(info.values())) #write info to DB
+                save_info_db(tuple(info.values())) #write info to DB
 
 
 
@@ -179,14 +184,8 @@ def start_message(message):
     db.create_db()
     while True:
         parse()
-        sleep(30)
+        sleep(5)
     
-
-@bot.message_handler(regexp='Mylist')
-def mylist(message):
-    items = read_database(CSV)
-    for art, good, pr, sp_pr, mo, day, year, time in items:
-        bot.send_message(message.chat.id, f'Артикул: {art}\nНаименование: {good}\nЦена: {pr}\nСпец\.цена: {sp_pr}\nДата добавления: {year} {mo} {day} {time}')
     
 
 @bot.message_handler(commands=['mylist_db'])
