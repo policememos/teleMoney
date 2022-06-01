@@ -6,8 +6,9 @@ from time import sleep
 import telebot
 import sql_api as db
 from lxml import etree
+import config
 
-TOKEN = '5178356349:AAE5mk8NT13nsChnvTMJ9NVSXUCsp8kRnTM'
+TOKEN = config.TOKEN
 
 bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 
@@ -130,7 +131,7 @@ def parse():
             last_chat_id, f'У тебя пока нет отслеживаемых товаров, отправь мне ссылку на товар с сайта Золотое Яблоко')
     else:
         for url in URLS:
-            print(f'\tGood {goods_amount_counter}/{len(URLS)}')
+            print(f'\t\tGood {goods_amount_counter}/{len(URLS)}')
             html = get_html(url)
             if not html:
                 continue  # ! добавь месседж юзеру что товар непрочекан
@@ -182,9 +183,7 @@ def start_message(message):
         message.chat.id, "🤖: Привет, оповещу тебя о\nсмене цены на товары из 🍎\nЦены обновляю каждые 3 часа")
     last_chat_id = message.from_user.id
     db.create_db(last_chat_id)
-    while True:
-        parse()
-        sleep(30)
+    parse()
     
     
 
@@ -198,7 +197,10 @@ def mylist_db(message):
 
 
 if __name__ == '__main__':
+    print('_____________________________________________________\n_______________ Bot status: Online __________________\n\n')
     bot.infinity_polling()
+    print('\n\n_____________________________________________________\n_______________ Bot status: offline _________________')
+    
     
 # parse(ITEMS,CSV)
 # read_database(CSV)
