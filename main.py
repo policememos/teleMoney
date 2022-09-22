@@ -6,9 +6,10 @@ from time import sleep
 import telebot
 import sql_api as db
 from lxml import etree
-import config
+#import config
+import os
 
-TOKEN = config.TOKEN
+TOKEN = os.getenv(TOKEN)
 
 bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 
