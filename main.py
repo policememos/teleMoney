@@ -9,7 +9,7 @@ from lxml import etree
 #import config
 import os
 
-TOKEN = os.getenv(TOKEN)
+TOKEN = os.getenv('TOKEN')
 
 bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 
