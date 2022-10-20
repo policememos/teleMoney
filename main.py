@@ -6,16 +6,15 @@ from time import sleep
 import telebot
 import sql_api as db
 from lxml import etree
-import config
+import os
 
-TOKEN = config.TOKEN
+TOKEN = os.getenv('TOKEN')
 
 bot = telebot.TeleBot(TOKEN, parse_mode='MarkdownV2')
 
-
 Uzver = ''
 CSV = 'prices.csv'
-URLS = ['https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet',
+URLS = ['https://goldapple.ru/19760311280-the-wet-detangler-mini-pink-sherbet', # Список ссылок на товары
         'https://goldapple.ru/11663-35161700002-menthol',
         'https://goldapple.ru/65970100004-hydrating-cream'
         ]
@@ -25,14 +24,17 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0'
 }
 
-
-
 last_chat_id = ''
 connection_time = ''
 diff_in_milliseconds = ''
 
 
 def get_html(url, params=''):
+    '''
+    Получаем страницу, замеряем время на получение ответа от сервера
+    Если ответ отличный от 200 пишем в консоль об ошибке
+    Если запрос успешен пишем "time ping" ответа
+    '''
     global connection_time
     global diff_in_milliseconds
     now1 = datetime.now()
@@ -48,14 +50,13 @@ def get_html(url, params=''):
     else:
         print(f">>> {current_time2} CONNECTION ERROR")
         return False
-
     print(f'                     Connection ping {round(diff_in_milliseconds)}ms')
     return html
 
 
 def get_content(html) -> tuple:
     '''
-    parsing soup object and returns dict 
+    Парсим soup обьект, возвращает dict 
     {'articule':    int,
     'name':         str,
     'price':        int, 
@@ -70,14 +71,6 @@ def get_content(html) -> tuple:
     current_time1 = str(now1.strftime("%b %d %Y %H:%M:%S"))
     print(f'{current_time1} Parsing elements...')
     soup = BeautifulSoup(html, 'lxml')
-    
-    # item = soup.find('div', class_='pdp__form-inner-wrapper')
-    # articule = item.find('p', class_="paragraph-2 pdp-form__sku").find('span', attrs={'itemprop': 'sku'}).text
-    # item_price = soup.find('div', class_='price-box price-final_price')
-    # special_price = item_price.find('span', class_="best-loyalty-price").find('span', attrs={'data-price-type': 'bestLoyaltyPrice'}).text.replace(u'\xa0', '').replace('₽', '').strip()
-    # price = item_price.find('span', class_='price').text.replace(u'\xa0', '').replace('₽', '').strip()
-    # name = item.find('a', class_='link-alt pdp-title__brand').text.strip() + ', ' + item.find('span', class_='pdp-title__name').text.strip()
-    
     dom = etree.HTML(str(soup))
     articule = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/p[1]/span[2]')[0].text
     price = dom.xpath('/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form/div[3]/div/div/span[1]/span/span/span')[0].text.replace(u'\xa0', '').replace('₽', '').strip()
@@ -88,7 +81,6 @@ def get_content(html) -> tuple:
             special_price = None
     except:
         special_price = None
-    
     
     now2 = datetime.now()
     current_time2 = str(now2.strftime("%b %d %Y %H:%M")).split()
@@ -121,7 +113,6 @@ def alert_to_user(oldprice, newprice, item):
 
 
 def parse():
-    # items = ()
     goods_amount = len(URLS)
     goods_amount_counter = 1
     global updated_price
@@ -165,14 +156,7 @@ def parse():
             except:
                 print('Try to find old price FAILED, skip this step')
                 goods_amount_counter += 1
-                save_info_db(tuple(info.values())) #write info to DB
-
-
-
-
-
-
-
+                save_info_db(tuple(info.values()))
 
     
 # BOT WRAPPER
@@ -187,24 +171,13 @@ def start_message(message):
         parse()
         sleep(30)
     
-    
-
 @bot.message_handler(commands=['mylist'])
 def mylist_db(message):
     items = db.read_db()
     for art, good, pr, sp_pr, mo, day, year, time in items:
         bot.send_message(message.chat.id, f'Артикул: {art}\nНаименование: {good}\nЦена: {pr}\nСпец\.цена: {sp_pr}\nДата добавления: {year} {mo} {day} {time}')
     
-
-
-
 if __name__ == '__main__':
     print('_____________________________________________________\n_______________ Bot status: Online __________________\n\n')
     bot.infinity_polling()
     print('\n\n_____________________________________________________\n_______________ Bot status: offline _________________')
-    
-    
-# parse(ITEMS,CSV)
-# read_database(CSV)
-# header, finded = find('1980', type_='Price')
-#/html/body/div[1]/main/div/div/section/section[1]/section[3]/div/form
