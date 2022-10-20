@@ -54,4 +54,3 @@ def find_data(name: int, type_='Articule') -> tuple:
     except Exception as err:
         print(f'Error occured:{err.__class__}, {err}')
         return None        
-    
